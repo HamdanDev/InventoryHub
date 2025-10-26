@@ -1,0 +1,118 @@
+@page "/fetchproducts"
+@inject IApiService ApiService
+@using ClientApp.Services
+@using ClientApp.Models
+
+<h3>Product List</h3>
+
+@if (isLoading)
+{
+    <div class="alert alert-info">
+        <span>Loading products...</span>
+    </div>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        @if (errorContext != null && errorContext.ContainsKey("ErrorCode"))
+        {
+            <br><small class="text-muted">Error Code: @errorContext["ErrorCode"]</small>
+        }
+        <button class="btn btn-sm btn-outline-primary ms-2" @onclick="LoadProductsAsync">
+            Retry
+        </button>
+    </div>
+}
+else if (products != null && products.Length > 0)
+{
+    <div class="row">
+        @foreach (var product in products)
+        {
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title">@product.Name</h5>
+                            @if (product.IsAvailable)
+                            {
+                                <span class="badge bg-success">Available</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Out of Stock</span>
+                            }
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(product.Category))
+                        {
+                            <p class="text-muted small mb-1">
+                                <i class="bi bi-tag"></i> @product.Category
+                            </p>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(product.Description))
+                        {
+                            <p class="card-text">@product.Description</p>
+                        }
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="h4 text-primary">$@product.Price.ToString("F2")</span>
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-box"></i> Stock: @product.Stock
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                Added: @product.CreatedAt.ToString("MMM dd")
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-warning">
+        No products found.
+    </div>
+}
+
+@code {
+    private Product[]? products;
+    private bool isLoading = false;
+    private string? errorMessage;
+    private Dictionary<string, object>? errorContext;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProductsAsync();
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        // Reset state
+        isLoading = true;
+        errorMessage = null;
+        errorContext = null;
+        StateHasChanged();
+
+        // Call the centralized API service - MUCH cleaner!
+        var result = await ApiService.GetAsync<Product[]>("/api/products", "Fetch Products");
+
+        if (result.IsSuccess)
+        {
+            products = result.Data;
+        }
+        else
+        {
+            errorMessage = result.ErrorMessage;
+            errorContext = result.ErrorContext;
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+}

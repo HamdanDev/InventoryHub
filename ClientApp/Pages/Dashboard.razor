@@ -1,0 +1,203 @@
+@page "/dashboard"
+@inject IApiService ApiService
+@using ClientApp.Services
+@using ClientApp.Models
+
+<h3>Products Dashboard</h3>
+
+@if (isLoading)
+{
+    <div class="alert alert-info">
+        <span>Loading dashboard...</span>
+    </div>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        <strong>Error:</strong> @errorMessage
+        <button class="btn btn-sm btn-outline-primary ms-2" @onclick="LoadDashboardAsync">
+            Retry
+        </button>
+    </div>
+}
+else
+{
+    <div class="row">
+        <!-- API Health Status -->
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-heart-pulse"></i> API Health</h5>
+                </div>
+                <div class="card-body">
+                    @if (healthStatus != null)
+                    {
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge @(healthStatus.Status == "healthy" ? "bg-success" : "bg-danger") me-2">
+                                @healthStatus.Status.ToUpper()
+                            </span>
+                            <small class="text-muted">@healthStatus.Timestamp.ToString("MMM dd, HH:mm")</small>
+                        </div>
+                        <p><strong>API Version:</strong> @healthStatus.Api?.Version</p>
+                        <p><strong>Products Available:</strong> @healthStatus.Api?.ProductCount</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Statistics -->
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-graph-up"></i> Product Statistics</h5>
+                </div>
+                <div class="card-body">
+                    @if (stats != null)
+                    {
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-primary">@stats.Total</h4>
+                                    <small>Total Products</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-success">@stats.InStock</h4>
+                                    <small>In Stock</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-warning">@stats.LowStock</h4>
+                                    <small>Low Stock</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-danger">@stats.OutOfStock</h4>
+                                    <small>Out of Stock</small>
+                                </div>
+                            </div>
+                        </div>
+                        @if (stats.PriceRange != null)
+                        {
+                            <hr>
+                            <p><strong>Price Range:</strong> $@stats.PriceRange.Min - $@stats.PriceRange.Max</p>
+                            <p><strong>Average Price:</strong> $@stats.PriceRange.Average</p>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Categories -->
+        <div class="col-md-12 mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-tags"></i> Product Categories</h5>
+                </div>
+                <div class="card-body">
+                    @if (categories != null && categories.Any())
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var category in categories)
+                            {
+                                <span class="badge bg-secondary fs-6">@category</span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No categories available</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isLoading = false;
+    private string? errorMessage;
+    private HealthStatus? healthStatus;
+    private ProductStats? stats;
+    private string[]? categories;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardAsync();
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            // Load all dashboard data in parallel
+            var healthTask = ApiService.GetAsync<HealthStatus>("/api/products/health", "Get API Health");
+            var statsTask = ApiService.GetAsync<ProductStats>("/api/products/stats", "Get Product Stats");
+            var categoriesTask = ApiService.GetAsync<string[]>("/api/products/categories", "Get Categories");
+
+            await Task.WhenAll(healthTask, statsTask, categoriesTask);
+
+            // Process results
+            if (healthTask.Result.IsSuccess)
+                healthStatus = healthTask.Result.Data;
+            else
+                errorMessage = healthTask.Result.ErrorMessage;
+
+            if (statsTask.Result.IsSuccess)
+                stats = statsTask.Result.Data;
+
+            if (categoriesTask.Result.IsSuccess)
+                categories = categoriesTask.Result.Data;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Failed to load dashboard data: " + ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    // Data models for the dashboard
+    public class HealthStatus
+    {
+        public string Status { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public ApiInfo? Api { get; set; }
+    }
+
+    public class ApiInfo
+    {
+        public string Version { get; set; } = string.Empty;
+        public int ProductCount { get; set; }
+    }
+
+    public class ProductStats
+    {
+        public int Total { get; set; }
+        public int InStock { get; set; }
+        public int LowStock { get; set; }
+        public int OutOfStock { get; set; }
+        public PriceRange? PriceRange { get; set; }
+    }
+
+    public class PriceRange
+    {
+        public decimal Min { get; set; }
+        public decimal Max { get; set; }
+        public double Average { get; set; }
+    }
+}
