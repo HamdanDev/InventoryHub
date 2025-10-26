@@ -4,6 +4,18 @@
 
 This project demonstrates a modern, enterprise-grade full-stack application built with **Blazor WebAssembly** (frontend) and **ASP.NET Core Web API** (backend). The application showcases comprehensive product management, real-time health monitoring, and advanced error handling with a clean, maintainable architecture developed using AI-assisted coding with GitHub Copilot.
 
+<img width="1127" height="763" alt="brave_ao1qqp3I9k" src="https://github.com/user-attachments/assets/68363ead-262e-4cdf-b593-085e4b6f73c9" />
+
+<img width="1127" height="763" alt="brave_gtkQndIivu" src="https://github.com/user-attachments/assets/3a7c562a-2aff-4485-8719-10e72ff1eb76" />
+
+<img width="1127" height="763" alt="brave_lFfKx4fbxV" src="https://github.com/user-attachments/assets/aa7952e0-ea5d-4aa4-b559-736e1566593f" />
+
+<img width="1127" height="763" alt="brave_i3B3OlH4Pg" src="https://github.com/user-attachments/assets/cdf13075-27eb-4d13-af1e-3b73f2c986d1" />
+
+
+<img width="272" height="815" alt="Code_CabsOIDhDI" src="https://github.com/user-attachments/assets/6ac93762-d191-4348-bd49-4954adec7ea0" />
+
+
 ### 🎯 Key Features
 
 - **📦 Product Management**: Complete CRUD operations with data validation
